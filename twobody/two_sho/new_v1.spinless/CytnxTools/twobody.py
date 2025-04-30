@@ -116,14 +116,6 @@ def H_two_particles (H1, L1, R1, H2, L2, R2):
     return H, L, R
 
 def corr_matrix (psi):
-    P = np.zeros((2,2,2,2))
-    P[0,0,0,0] = 1.
-    P[0,1,0,1] = 1.
-    P[1,0,1,0] = -1.
-    P[1,1,1,1] = 1.
-    P = P.reshape((4,4))
-
-    # (I-P)|psi>
     mps = []
     for i in range(len(psi)):
         d = psi[i].shape
@@ -131,7 +123,7 @@ def corr_matrix (psi):
 
     mpo = []
     for i in range(len(mps)):
-        A = ncon([mps[i],mps[i]], ((-1,-3,1,-5), (-2,-4,1,-6)))
+        A = ncon([np.conj(mps[i]),mps[i]], ((-1,-3,1,-5), (-2,-4,1,-6)))
         d = A.shape
         A = A.reshape((d[0]*d[1], d[2], d[3], d[4]*d[5]))
         mpo.append (A)
@@ -142,7 +134,8 @@ def set_mpo_quantum_number(mpo, L, R):
     # Physical bond
     ii = phys_index().redirect()
     iip = ii.redirect()
-
+    dtype = min(ut.toUniTen (mpo[0]).dtype(), ut.toUniTen (L).dtype(), ut.toUniTen (R).dtype())
+    #print(dtype)
     # Left and right virtual bonds
     li = cytnx.Bond(cytnx.BD_IN, [[0]], [mpo[0].shape[0]], [cytnx.Symmetry.Zn(2)])
     ri = cytnx.Bond(cytnx.BD_OUT, [[0]], [mpo[-1].shape[-1]], [cytnx.Symmetry.Zn(2)])
@@ -155,8 +148,8 @@ def set_mpo_quantum_number(mpo, L, R):
     vb0 = cytnx.Bond(cytnx.BD_IN, [[0]], [1], [cytnx.Symmetry.Zn(2)])
     vb1 = cytnx.Bond(cytnx.BD_IN, [[1]], [1], [cytnx.Symmetry.Zn(2)])
 
-    qnL = cytnx.UniTensor([li.redirect(), vb0.redirect(), vb0], labels=['mid', 'dn', 'up'], dtype=npmps.py_to_cy_dtype(L.dtype))
-    qnR = cytnx.UniTensor([ri.redirect(), vb1, vb1.redirect()], labels=['mid', 'dn', 'up'], dtype=npmps.py_to_cy_dtype(R.dtype))
+    qnL = cytnx.UniTensor([li.redirect(), vb0.redirect(), vb0], labels=['mid', 'dn', 'up'], dtype=dtype)
+    qnR = cytnx.UniTensor([ri.redirect(), vb1, vb1.redirect()], labels=['mid', 'dn', 'up'], dtype=dtype)
     qnL.convert_from(uL)
     qnR.convert_from(uR)
 
@@ -169,14 +162,14 @@ def set_mpo_quantum_number(mpo, L, R):
         ri1 = cytnx.Bond(cytnx.BD_OUT, [[1]], [rdim], [cytnx.Symmetry.Zn(2)])
 
         uT = ut.toUniTen(mpoA)
-        qn_T0 = cytnx.UniTensor([li, iip, ii, ri0], labels=["l", "ip", "i", "r"], dtype=npmps.py_to_cy_dtype(mpo[i].dtype))
-        qn_T1 = cytnx.UniTensor([li, iip, ii, ri1], labels=["l", "ip", "i", "r"], dtype=npmps.py_to_cy_dtype(mpo[i].dtype))
+        qn_T0 = cytnx.UniTensor([li, iip, ii, ri0], labels=["l", "ip", "i", "r"], dtype=dtype)
+        qn_T1 = cytnx.UniTensor([li, iip, ii, ri1], labels=["l", "ip", "i", "r"], dtype=dtype)
         qn_T0.convert_from(uT, force=True)
         qn_T1.convert_from(uT, force=True)
         qn_Ts = [qn_T0, qn_T1]
 
         ri = cytnx.Bond(cytnx.BD_OUT, [[0], [1]], [rdim, rdim], [cytnx.Symmetry.Zn(2)])
-        qn_T = cytnx.UniTensor([li, iip, ii, ri], labels=["l", "ip", "i", "r"], dtype=npmps.py_to_cy_dtype(mpo[i].dtype))
+        qn_T = cytnx.UniTensor([li, iip, ii, ri], labels=["l", "ip", "i", "r"], dtype=dtype)
 
         for i1 in range(len(qn_T.bond("l").qnums())):
             for i2 in range(len(qn_T.bond("ip").qnums())):
@@ -194,14 +187,14 @@ def set_mpo_quantum_number(mpo, L, R):
         qn_T.set_rowrank_(3)
         s, A, vt = cytnx.linalg.Svd_truncate(qn_T, keepdim=2 * rdim, err=1e-12)
         
-        if s.dtype() != cytnx.Type.ComplexDouble:
-            s = s.astype(cytnx.Type.ComplexDouble)
+        #s = s/s.Norm().item()
+        s = s.astype(vt.dtype())
         R = cytnx.Contract(s, vt)
 
         A.relabel_("_aux_L", "r")
         re.append(A)
 
-        TR = cytnx.UniTensor.zeros(R.shape(), dtype=npmps.py_to_cy_dtype(mpo[i].dtype)).convert_from(R).get_block().numpy()
+        TR = cytnx.UniTensor.zeros(R.shape(), dtype=dtype).convert_from(R).get_block().numpy()
         mpoA2 = ncon([TR, mpoA2], ((-1, 1), (1, -4, -5, -6)))
 
         mpoA = mpoA2
@@ -209,7 +202,7 @@ def set_mpo_quantum_number(mpo, L, R):
 
     uT = ut.toUniTen(mpoA)
     ri = cytnx.Bond(cytnx.BD_OUT, [[0]], [mpo[-1].shape[-1]], [cytnx.Symmetry.Zn(2)])
-    qn_T = cytnx.UniTensor([li, iip, ii, ri], labels=["l", "ip", "i", "r"], dtype=npmps.py_to_cy_dtype(mpo[i].dtype))
+    qn_T = cytnx.UniTensor([li, iip, ii, ri], labels=["l", "ip", "i", "r"], dtype=dtype)
     qn_T.convert_from(uT, force=True)
     re.append(qn_T)
 

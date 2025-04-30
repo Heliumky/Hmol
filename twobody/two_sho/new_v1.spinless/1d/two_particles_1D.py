@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import qtt_utility as ut
 import copy, sys, os
-import qn_utility as qn
 import MPS_utility as mpsut
 import twobody as twut
 import SHO as sho
@@ -14,6 +13,7 @@ from matplotlib import cm
 import hamilt
 import tci
 import npmps
+import cytnx
 #import plotsetting as ps
 
 if __name__ == '__main__':
@@ -61,7 +61,8 @@ if __name__ == '__main__':
     
     # Create MPS
     psi = twut.make_product_mps (N)
-
+    #psi = twut.make_product_mps (N, cytnx.Type.Double)
+    print([psi[i].dtype() for i in range(len(psi))])
 
     # Define the bond dimensions for the sweeps
     maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50 + [32]*40
@@ -88,12 +89,12 @@ if __name__ == '__main__':
 
     maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50
     corr, Lcorr, Rcorr = ut.mpo_to_uniten (corr, Lcorr, Rcorr)
-    phi1 = ut.generate_random_MPS_nparray (N, d=2, D=2)
+    phi1 = npmps.random_MPS(N, 2, 15, 2,complex)
     phi1 = ut.mps_to_uniten (phi1)
     phi1, occ1,terrs1 = dmrg.dmrg (phi1, corr, Lcorr, Rcorr, maxdims, cutoff)
 
 
-    phi2 = ut.generate_random_MPS_nparray (N, d=2, D=2)
+    phi2 = npmps.random_MPS(N, 2, 15, 2,complex)
     phi2 = ut.mps_to_uniten (phi2)
     phi2, occ2, terrs2 = dmrg.dmrg (phi2, corr, Lcorr, Rcorr, maxdims, cutoff, ortho_mpss=[phi1], weights=[20])
 
@@ -122,10 +123,10 @@ if __name__ == '__main__':
 
     fig, ax = plt.subplots()
     #ax.plot (xs, Vx)
-    ax.plot (xs, ys1, marker='.')
-    ax.plot (xs, ys2, marker='.')
+    ax.plot (xs, np.abs(ys1/np.sqrt(dx))**2, marker='.')
+    ax.plot (xs, np.abs(ys2/np.sqrt(dx))**2, marker='.')
     ax.set_xlabel('$x$')
-    ax.set_ylabel('$\phi(x)$')
+    ax.set_ylabel('$|\phi(x)|^2$')
     #ps.set(ax)
     fig.savefig('phi.pdf')
     plt.show()

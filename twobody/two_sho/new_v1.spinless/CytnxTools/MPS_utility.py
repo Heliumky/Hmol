@@ -32,13 +32,27 @@ def to_npMPS (mps):
     res = []
     for i in range(len(mps)):
         if mps[i].is_blockform():
-            A = cytnx.UniTensor.zeros(mps[i].shape())
+            A = cytnx.UniTensor.zeros(mps[i].shape(), dtype=mps[i].dtype())
             A.convert_from(mps[i])
             A = A.get_block().numpy()
         else:
             A = mps[i].get_block().numpy()
         res.append(A)
     return res
+
+def to_npMPO(mpo,Lr,Rr):
+    res = []
+    for i in range(len(mpo)):
+        if mpo[i].is_blockform():
+            A = cytnx.UniTensor.zeros(mpo[i].shape(), dtype=mpo[i].dtype())
+            A.convert_from(mpo[i])
+            A = A.get_block().numpy()
+        else:
+            A = mps[i].get_block().numpy()
+        res.append(A)
+    L = Lr.get_block().numpy()
+    R = Rr.get_block().numpy()
+    return res, L, R
 
 # ============================================================
 

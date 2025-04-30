@@ -1,10 +1,12 @@
-import cytnx
+import sys
+import copy
 import numpy as np
 from ncon import ncon
-import sys
-import qtt_utility as ut
-import copy
-#from numba import jit
+
+
+I = np.array([[1.,0.],[0.,1.]])
+sp = np.array([[0,1],[0,0]])
+sm = np.array([[0,0],[1,0]])
 
 #======================== MPS #========================
 # For each tensor, the order of index is (left, i, right)
@@ -16,17 +18,34 @@ def check_MPS_links (mps):
             assert mps[i-1].shape[-1] == mps[i].shape[0]
 
 
-def random_MPS(N, phydim, seed, vdim=1, dtype=complex):
+def random_MPS(N, phydim, seed, vdim=1, dtype=np.complex128):
     mps = []
     np.random.seed(seed)
+
+    is_complex = np.issubdtype(dtype, np.complexfloating)
+
     for i in range(N):
         if i == 0:
-            mps.append (np.random.rand (1, phydim, vdim).astype(dtype) + 1j*np.random.rand (1, phydim, vdim).astype(dtype))
+            arr = np.random.rand(1, phydim, vdim).astype(dtype)
         elif i == N-1:
-            mps.append (np.random.rand (vdim, phydim, 1).astype(dtype) + 1j*np.random.rand (vdim, phydim, 1).astype(dtype))
+            arr = np.random.rand(vdim, phydim, 1).astype(dtype)
         else:
-            mps.append (np.random.rand (vdim, phydim, vdim).astype(dtype)+ 1j*np.random.rand  (vdim, phydim, vdim).astype(dtype))
+            arr = np.random.rand(vdim, phydim, vdim).astype(dtype)
+
+        if is_complex:
+
+            if i == 0:
+                arr += 1j * np.random.rand(1, phydim, vdim).astype(dtype)
+            elif i == N-1:
+                arr += 1j * np.random.rand(vdim, phydim, 1).astype(dtype)
+            else:
+                arr += 1j * np.random.rand(vdim, phydim, vdim).astype(dtype)
+
+        mps.append(arr)
+    c = inner_MPS(mps,mps)
+    mps[0] = mps[0]/np.sqrt(c)
     return mps
+
 
 #@jit(nopython=True)
 def compress_MPS (mps, D=sys.maxsize, cutoff=0.):
@@ -151,6 +170,29 @@ def mps_func_to_mpo (mps):
     R = np.array([1.])
     return mpo, L, R
 
+#======================== SVD Truncation ========================
+def truncate_svd2 (T, rowrank, cutoff):
+    ds = T.shape
+    d1, d2 = 1, 1
+    ds1, ds2 = [],[]
+    for i in range(rowrank):
+        d1 *= ds[i]
+        ds1.append(ds[i])
+    for i in range(rowrank,len(ds)):
+        d2 *= ds[i]
+        ds2.append(ds[i])
+    T = T.reshape((d1,d2))
+    U, S, Vh = np.linalg.svd (T)
+    U = U[:,:len(S)]
+    Vh = Vh[:len(S),:]
+    ii = (S >= cutoff)
+    U, S, Vh = U[:,ii], S[ii], Vh[ii,:]
+
+    A = (U*S).reshape(*ds1,-1)
+    B = Vh.reshape(-1,*ds2)
+    return A, B
+
+
 #======================== MPO ========================
 # For each tensor, the order of index is (left, i', i, right)
 # An MPO also has a left and a right tensor
@@ -206,7 +248,7 @@ def purify_MPO (mpo, L, R, cutoff=0.):
     # Make the MPO like an MPS by splitting the physical indices
     mps = []
     for A in mpo:
-        A1, A2 = ut.truncate_svd2 (A, 2, cutoff)
+        A1, A2 = truncate_svd2 (A, 2, cutoff)
         mps += [A1, A2]
 
     mps[0] = ncon ([L,mps[0]], ((1,), (1,-1,-2)))
@@ -259,11 +301,14 @@ def sum_2MPO (mpo1, L1, R1, mpo2, L2, R2):
     return mpo, L, R
 
 def inner_MPO (mps1, mps2, mpo, L, R):
+    assert len(mps1) == len(mps2) == len(mpo)
     res = L.reshape((1,L.shape[0],1))
     for i in range(len(mps1)):
         res = ncon([res,mps1[i],mpo[i],np.conjugate(mps2[i])], ((1,2,3), (1,4,-1), (2,5,4,-2), (3,5,-3)))
     res = ncon([res, R.reshape((1,R.shape[0],1))], ((1,2,3), (1,2,3)))
-    return float(res)
+    res = res.reshape(-1)
+    assert len(res) == 1
+    return res[0]
 
 def MPO_contract_all (mpo):
     res = mpo[0]
@@ -317,19 +362,3 @@ def prod_MPO(mpo1, L1, R1, mpo2, L2, R2):
     L = ncon([L1,L2], ((-1,),(-2,))).reshape(-1,)
     R = ncon([R1,R2], ((-1,),(-2,))).reshape(-1,)
     return mpo, L, R
-
-def py_to_cy_dtype(np_dtype):
-    if np_dtype == np.float32:
-        return cytnx.Type.Float
-    elif np_dtype == np.float64:
-        return cytnx.Type.Double
-    elif np_dtype == np.complex64:
-        return cytnx.Type.ComplexDouble 
-    elif np_dtype == np.complex128:
-        return cytnx.Type.ComplexDouble
-    elif np_dtype == np.int32:
-        return cytnx.Type.Int
-    elif np_dtype == np.int64:
-        return cytnx.Type.Long
-    else:
-        raise ValueError(f"Unsupported NumPy dtype: {np_dtype}")

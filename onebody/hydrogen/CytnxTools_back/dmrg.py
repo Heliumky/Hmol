@@ -135,9 +135,10 @@ class LR_envir_tensors_mps:
 class eff_Hamilt (cytnx.LinOp):
     def __init__ (self, L, M1, M2, R):
         # Initialization
+        # Initialization
         dtype_list = [L.dtype(), M1.dtype(), M2.dtype(), R.dtype()]
-        assert all(d == dtype_list[0] for d in dtype_list), f"Dtype mismatch: {dtype_list}"
-        dtype = max(L.dtype(), M1.dtype(), M2.dtype(), R.dtype())
+        #assert all(d == dtype_list[0] for d in dtype_list), f"Dtype mismatch: {dtype_list}"
+        dtype = min(L.dtype(), M1.dtype(), M2.dtype(), R.dtype())
 
         cytnx.LinOp.__init__(self,"mv", 0, dtype = dtype)
 

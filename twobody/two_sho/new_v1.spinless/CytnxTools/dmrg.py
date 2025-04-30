@@ -3,9 +3,8 @@
 #sys.path.insert(0,'/home/chiamin/cytnx_dev/Cytnx_lib/')
 import cytnx
 import numpy as np
-#from scipy.sparse.linalg import LinearOperator
-import MPS_utility as mpsut
 import qtt_utility as ut
+import MPS_utility as mpsut
 
 class LR_envir_tensors_mpo:
     def __init__ (self, N, L0, R0):
@@ -85,8 +84,9 @@ class LR_envir_tensors_mps:
         l2 = mps2[0].bond("l")
         r1 = mps1[-1].bond("r").redirect()
         r2 = mps2[-1].bond("r")
-        L0 = cytnx.UniTensor ([l1,l2], labels=['dn','up'])
-        R0 = cytnx.UniTensor ([r1,r2], labels=['dn','up'])
+        dtype = min(mps1[0].dtype(), mps2[0].dtype(), mps1[-1].dtype(), mps2[-1].dtype())
+        L0 = cytnx.UniTensor ([l1,l2], labels=['dn','up'], dtype = dtype)
+        R0 = cytnx.UniTensor ([r1,r2], labels=['dn','up'], dtype = dtype)
         assert np.prod(L0.shape()) == np.prod(R0.shape()) == 1
         L0.at([0,0]).value = 1.
         R0.at([0,0]).value = 1.
@@ -122,8 +122,7 @@ class LR_envir_tensors_mps:
             A1 = self.LR[p+1].relabels(['up','dn'],['_up', '_dn'])
             A2 = mps1[p].relabels(['r','i','l'],['_dn', 'i', 'dn'])
             A3 = mps2[p].Dagger().relabels(['r','i','l'],['_up', 'i', 'up'])
-            #print("A1 type", A1.dtype())
-            #print("A2 type", A2.dtype())
+
             tmp = cytnx.Contract(A1,A2)
             tmp = cytnx.Contract(tmp,A3)
             self.LR[p] = tmp
@@ -137,8 +136,8 @@ class eff_Hamilt (cytnx.LinOp):
         # Initialization
 
         dtype_list = [L.dtype(), M1.dtype(), M2.dtype(), R.dtype()]
-        assert all(d == dtype_list[0] for d in dtype_list), f"Dtype mismatch: {dtype_list}"
-        dtype = max(L.dtype(), M1.dtype(), M2.dtype(), R.dtype())
+        #assert all(d == dtype_list[0] for d in dtype_list), f"Dtype mismatch: {dtype_list}"
+        dtype = min(L.dtype(), M1.dtype(), M2.dtype(), R.dtype())
 
         cytnx.LinOp.__init__(self,"mv", 0, dtype = dtype)
 
@@ -249,8 +248,6 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
                 # Compute the current psi
                 A1 = psi[p].relabels(['l','i','r'], ['l','i1','_'])
                 A2 = psi[p+1].relabels(['l','i','r'],['_','i2','r'])
-                #print("A1 type", A1.dtype())
-                #print("A2 type", A2.dtype())
                 phi = cytnx.Contract (A1, A2)
                 
 
@@ -287,9 +284,7 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
                 
                 # Normalize the singular values
                 s = s/s.Norm().item()
-                #if s.dtype() != cytnx.Type.ComplexDouble:
-                #    s = s.astype(cytnx.Type.ComplexDouble)
-
+                s = s.astype(psi[p+1].dtype())
                 if lr == 0:
                     # Absorb s into next neighbor
                     psi[p] = cytnx.Contract(psi[p],s)

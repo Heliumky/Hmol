@@ -1,7 +1,7 @@
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../CytnxTools')))
-import dmrg as dmrg
 import numpy as np
+import dmrg as dmrg
 import qtt_utility as ut
 import MPS_utility as mpsut
 import hamilt
@@ -12,7 +12,7 @@ import plot_utility as ptut
 import matplotlib.pyplot  as plt
 
 if __name__ == '__main__':
-    N = 7
+    N = 2
     #cutoff = 0.1
     shift = -8
     rescale = -2*shift/(2**N-1)
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Potential energy
     factor = 1
-    #os.system('python3 tci.py '+str(2*N)+' '+str(rescale)+' '+str(shift)+' '+str(cutoff)+' '+str(factor)+' --2D_one_over_r')
+    os.system('python3 tci.py '+str(2*N)+' '+str(rescale)+' '+str(shift)+' '+str(cutoff)+' '+str(factor)+' --2D_one_over_r')
     V_MPS = tci.load_mps(f'fit{2*N}.mps.npy')
     #V_MPS = tci.tci_one_over_r_2D (2*N, rescale, cutoff, factor, shift)
     HV, LV, RV = npmps.mps_func_to_mpo(V_MPS)
@@ -67,18 +67,19 @@ if __name__ == '__main__':
     cutoff = 1e-12
 
     # Run dmrg
-    maxdims = [2]*20 + [4]*50 + [8]*50 + [16] * 60
+    #maxdims = [2]*20 + [4]*50 + [8]*50 + [16] * 60
+    maxdims = [2]*1
     psi0 = npmps.random_MPS (2*N, 2, 15)
     psi0 = npmps.compress_MPS (psi0, cutoff=1e-18)
     print(npmps.inner_MPS(psi0,psi0))
     psi0 = mpsut.npmps_to_uniten (psi0)
     #print(H[0].dtype(), L[0].dtype(), R[0].dtype())
-    print(R)
     psi0, ens0, terrs0 = dmrg.dmrg (psi0, H, L, R, maxdims, cutoff)
     np.savetxt(f'2d_terr0_N={N}.dat',(terrs0,ens0))
-
+    print(psi0)
     #maxdims = maxdims + [64] * 20
-    maxdims = [2]*20 + [4]*2000 + [8]*1000+ [16] * 50
+    #maxdims = [2]*20 + [4]*2000 + [8]*1000+ [16] * 50
+    maxdims = [2]*1
     psi1 = npmps.random_MPS (2*N, 2, 15)
     psi1 = mpsut.npmps_to_uniten (psi1)
     psi1,ens1,terrs1 = dmrg.dmrg (psi1, H, L, R, maxdims, cutoff, ortho_mpss=[psi0], weights=[10])
