@@ -11,7 +11,7 @@ import npmps
 def phys_index ():
     return cytnx.Bond(cytnx.BD_IN, [[0],[1]], [3,1], [cytnx.Symmetry.Zn(2)])
 
-def make_product_mps (N, cy_dtype = cytnx.Type.ComplexDouble):
+def make_product_mps (N, cy_dtype):
     # The parity for the physical bond is [0,0,0,1]
     ii = phys_index()   # physical bond
     # Virtual bonds

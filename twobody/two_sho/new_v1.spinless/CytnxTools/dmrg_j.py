@@ -200,7 +200,8 @@ class eff_Hamilt (cytnx.LinOp):
         for j in range(len(self.ortho)):
             ortho = self.ortho[j]
             overlap = cytnx.Contract (ortho, v)
-            out += self.ortho_w[j] * overlap.item() * ortho.Dagger()
+            print("over=", overlap.item())
+            out += self.ortho_w[j] * overlap.item() * ortho
 
         return out
 
@@ -253,7 +254,7 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
                     omps = ortho_mpss[j]
                     weight = weights[j]
                     oLR = LR_ortho[j]
-                    effH.add_orthogonal (oLR[p], omps[p], omps[p+1], oLR[p+2], weight)
+                    effH.add_orthogonal (oLR[p].Dagger(), omps[p].Dagger(), omps[p+1].Dagger(), oLR[p+2].Dagger(), weight)
                 #print("effH dtype:", effH.dtype())
                 #print("phi dtype:", phi.dtype())
 

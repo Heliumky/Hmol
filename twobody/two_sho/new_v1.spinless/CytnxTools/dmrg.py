@@ -173,8 +173,8 @@ class eff_Hamilt (cytnx.LinOp):
     def add_orthogonal (self, L, orthoA1, orthoA2, R, weight):
         self.anet2.PutUniTensor("L", L, ["dn","up"])
         self.anet2.PutUniTensor("R", R, ["dn","up"])
-        self.anet2.PutUniTensor("A1", orthoA1, ["l","i","r"])
-        self.anet2.PutUniTensor("A2", orthoA2, ["l","i","r"])
+        self.anet2.PutUniTensor("A1", orthoA1.Dagger(), ["l","i","r"])
+        self.anet2.PutUniTensor("A2", orthoA2.Dagger(), ["l","i","r"])
         out = self.anet2.Launch()
         out.relabels_(['l','i1','i2','r'])
         self.ortho.append(out)
@@ -208,7 +208,12 @@ class eff_Hamilt (cytnx.LinOp):
         for j in range(len(self.ortho)):
             ortho = self.ortho[j]
             overlap = cytnx.Contract (ortho, v)
+            print("ovr =", overlap.item())
+            #out += self.ortho_w[j] * np.conjugate(overlap.item()) * ortho.Dagger()
+            #out += self.ortho_w[j] * overlap.item() * ortho
             out += self.ortho_w[j] * overlap.item() * ortho.Dagger()
+            #overlap = cytnx.Contract(ortho.Dagger(), v) 
+            #out += self.ortho_w[j] * overlap.item() * ortho 
         return out
 
 def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[], verbose=True):
@@ -220,8 +225,9 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
     # Define the links to update for a sweep
     # First do a right-to-left and then a left-to-right sweep
     Nsites = len(psi)
+    print(Nsites)
     ranges = [range(Nsites-2,-1,-1), range(Nsites-1)]
-
+    print("ranges = ", ranges)
     # For printing information
     verbose = ["[r->l]", "[l->r]"]
 
@@ -235,7 +241,7 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
         lr = LR_envir_tensors_mps (Nsites, psi, omps)
         lr.update_LR (psi, omps, Nsites-1)
         LR_ortho.append (lr)
-    
+    #print(ranges[lr])
     ens, terrs = [], []
     N_update = len(ranges[0]) + len(ranges[1])
     for k in range(len(maxdims)):                                                            # For each sweep
@@ -243,7 +249,9 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
         print ('Sweep',k,', chi='+str(chi))
         terr = 0.
         for lr in [0,1]:
-            for p in ranges[lr]:                                                             # For each bond
+            print("lr=",lr)
+            for p in ranges[lr]:
+                print("p=", p)                                                             # For each bond
                 M1, M2 = H[p], H[p+1]
                 # Compute the current psi
                 A1 = psi[p].relabels(['l','i','r'], ['l','i1','_'])
@@ -260,12 +268,14 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
                     omps = ortho_mpss[j]
                     weight = weights[j]
                     oLR = LR_ortho[j]
+                    #effH.add_orthogonal (oLR[p].Dagger(), omps[p].Dagger(), omps[p+1].Dagger(), oLR[p+2].Dagger(), weight)
                     effH.add_orthogonal (oLR[p], omps[p], omps[p+1], oLR[p+2], weight)
                 #print("effH dtype:", effH.dtype())
                 #print("phi dtype:", phi.dtype())
 
                 # Find the ground state for the current bond
                 enT, phi = cytnx.linalg.Lanczos (effH, phi, method="Gnd", Maxiter=maxIter, CvgCrit=100000)
+                #enT, phi = cytnx.linalg.Lanczos (effH, k =1, Tin=phi, method ="ER")
                 en = enT.item()     # Tensor to number
 
                 # SVD and truncate the wavefunction psi
