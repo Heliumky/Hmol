@@ -1,9 +1,8 @@
 import sys
 #sys.path.insert(0,'/home/chiamin/cytnx_dev/Cytnx_lib/')
 import cytnx
-import numpy as np
 from ncon import ncon
-
+import numpy as np
 
 I = np.array([[1.,0.],[0.,1.]])
 sp = np.array([[0,1],[0,0]])

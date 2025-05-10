@@ -1,9 +1,8 @@
 import differential as df
 import npmps
-import numpy as np
 import linear as lin
 from ncon import ncon
-
+import numpy as np
 
 
 def get_H (V_MPS):

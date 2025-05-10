@@ -174,8 +174,8 @@ class eff_Hamilt (cytnx.LinOp):
     def add_orthogonal (self, L, orthoA1, orthoA2, R, weight):
         self.anet2.PutUniTensor("L", L, ["dn","up"])
         self.anet2.PutUniTensor("R", R, ["dn","up"])
-        self.anet2.PutUniTensor("A1", orthoA1, ["l","i","r"])
-        self.anet2.PutUniTensor("A2", orthoA2, ["l","i","r"])
+        self.anet2.PutUniTensor("A1", orthoA1.Dagger(), ["l","i","r"])
+        self.anet2.PutUniTensor("A2", orthoA2.Dagger(), ["l","i","r"])
         out = self.anet2.Launch()
         out.relabels_(['l','i1','i2','r'])
         self.ortho.append(out)
@@ -201,8 +201,8 @@ class eff_Hamilt (cytnx.LinOp):
         for j in range(len(self.ortho)):
             ortho = self.ortho[j]
             overlap = cytnx.Contract (ortho, v)
-            out += self.ortho_w[j] * overlap.item() * ortho.Dagger()
-
+            #print(overlap.item())
+            out += self.ortho_w[j] * overlap.item()* ortho.Dagger()
         return out
 
 def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[], verbose=True):
@@ -260,6 +260,8 @@ def dmrg (psi, H, L0, R0, maxdims, cutoff, maxIter=10, ortho_mpss=[], weights=[]
 
                 # Find the ground state for the current bond
                 enT, phi = cytnx.linalg.Lanczos (effH, phi, method="Gnd", Maxiter=maxIter, CvgCrit=100000)
+                #enT, phi = cytnx.linalg.Lanczos (effH, k =1, Tin=phi, method ="ER", max_krydim = 10)
+
                 en = enT.item()     # Tensor to number
 
                 # SVD and truncate the wavefunction psi

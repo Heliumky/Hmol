@@ -3,56 +3,7 @@ import cytnx
 import dmrg
 import qtt_utility as ut
 import numpy as np
-
-
-def grow_site_basic (psi, normalize=True):
-    A = np.array([1.,1.]).reshape(1,2,1)
-    if normalize:
-        A /= np.linalg.norm(A)
-    return [A] + psi
-
-def grow_site_1D (psi):
-    psi = copy.copy(psi)
-    ds = psi[0].shape
-
-    A1 = np.zeros((2,ds[1],ds[2]))
-    A1[0,0,:] = psi[0][0,0,:]
-    A1[1,1,:] = psi[0][0,1,:]
-    psi[0] = A1
-
-    A0 = np.zeros((1,2,2))
-    A0[0,0,:] = [1,1]
-    A0[0,1,:] = [1,1]
-    mps = [A0] + psi
-    return mps
-
-def grow_site_2D (psi):
-    assert len(psi) % 2 == 0
-    psi = copy.copy(psi)
-    ds = psi[0].shape
-
-    # For x
-    A1 = np.zeros((2,ds[1],ds[2]))
-    A1[0,0,:] = psi[0][0,0,:]
-    A1[1,1,:] = psi[0][0,1,:]
-    psi[0] = A1
-
-    A0 = np.zeros((1,2,2))
-    A0[0,0,:] = [1,1]
-    A0[0,1,:] = [1,1]
-
-    # For y
-    ind = len(psi) // 2
-    bdim = psi[ind].shape[0]    # bond dimension
-    pdim = psi[0].shape[1]      # physical dimension
-    A2 = np.zeros((bdim, pdim, bdim))
-    for i in range(pdim):
-        A2[:,i,:] = np.ones ((bdim,bdim))#bdim)
-
-    mps = [A0] + psi[:ind] + [A2] + psi[ind:]
-
-    npmps.check_MPS_links(mps)
-    return mps
+import copy
 
 # ============================== Convert between numpy array and UniTensor ==============================
 def npmps_to_uniten (mps):

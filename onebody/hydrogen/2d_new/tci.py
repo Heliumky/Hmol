@@ -5,9 +5,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Cytn
 #sys.path.append('/home/jerrychen/xfac/build/python/')
 sys.path.append('/home/jerrychen/Desktop/My_Work/TN_Numerical/qtt_jerry/xfac_cytnx/build/python/')
 import xfacpy
-import numpy as np
 import time
 import matplotlib.pyplot as plt
+import numpy as np
 
 def cc_inds_to_x (inds, rescale, shift):
     res = inds[0]

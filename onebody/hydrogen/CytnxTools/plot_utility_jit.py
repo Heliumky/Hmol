@@ -1,10 +1,9 @@
 import npmps
 from numba import njit, prange
-from tci import load_mps
 import os
 import numpy as np
 
-@njit
+@njit(parallel=True)
 def dec_to_bin(dec, N):
     bstr = np.zeros(N, dtype=np.int32)
     for i in prange(N):
@@ -74,7 +73,7 @@ def get_2D_mesh_eles_mps(mps, bxs, bys):
         for j in prange(ny):
             bstr = np.hstack((bxs[i], bys[j]))  # Directly concatenate arrays
             fs[i, j] = get_ele_mps(mps, bstr)
-    return fs
+    return fs.transpose(1,0)
 
 @njit(parallel=True)
 def get_3D_mesh_eles_mps(mps, bxs, bys, bzs):
@@ -86,7 +85,7 @@ def get_3D_mesh_eles_mps(mps, bxs, bys, bzs):
                 bstr = np.hstack((bxs[i], bys[j], bzs[k]))  # Directly concatenate arrays
                 #print(bstr)
                 fs[i, j, k] = get_ele_mps(mps, bstr)
-    return fs
+    return fs.transpose(2,1,0)
 
 # Function for 2D mesh MPO
 @njit(parallel=True)
@@ -98,44 +97,3 @@ def get_2D_mesh_eles_mpo(mpo, L, R, bxs, bys):
             bstr = bxs[i] + bys[j]  # Combine binary numbers directly
             fs[i, j] = get_ele_mpo(mpo, L, R, bstr)
     return fs
-
-if __name__ == '__main__':
-    N = 3
-    shift = -6
-    rescale = -2*shift/(2**N-1)
-    xmax = -shift
-    cutoff = rescale
-    dx = rescale 
-    print('xmax =', xmax)
-    print('xshift =', shift)
-    print('dx =', dx)
-
-    bxs = list(BinaryNumbers(N))
-    bys = list(BinaryNumbers(N))
-    bzs = list(BinaryNumbers(N))
-
-    xs = bin_to_dec_list(bxs, rescale=rescale, shift=shift)
-    ys = bin_to_dec_list(bys, rescale=rescale, shift=shift)
-    zs = bin_to_dec_list(bzs, rescale=rescale, shift=shift)
-    X, Y, Z = np.meshgrid(xs, ys, zs)
-
-    factor = 1
-    #os.system('python3 tci.py ' + str(3*N) + ' ' + str(rescale) + ' ' + str(shift) + ' ' + str(cutoff) + ' ' + str(factor) + ' --3D_one_over_r')
-    V_MPS = load_mps(f'fit{3*N}.mps.npy')
-    print(V_MPS[0].dtype)
-    #print(get_ele_mps(V_MPS, bstr=np.array([0, 0, 0, 0, 0, 0, 0, 0, 0])))
-    ZV = get_3D_mesh_eles_mps(V_MPS, bxs, bys, bzs)
-    INTZ_Z0 = np.sum(np.abs(ZV / dx**1.5)**2, axis=2) * dx
-
-    import matplotlib.pyplot as plt
-# XY plane
-    # Ground state density
-    plt.figure(figsize=(12, 24))
-    plt.subplot(3, 2, 1)
-    plt.imshow(INTZ_Z0, extent=(X.min(), X.max(), Y.min(), Y.max()), origin='lower', cmap='viridis')
-    plt.colorbar(label='Intensity')
-    #plt.title(f'1s XY Density (Energy = {energy_excited:.8f})')
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.show()
-

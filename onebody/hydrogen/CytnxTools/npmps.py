@@ -192,6 +192,20 @@ def truncate_svd2 (T, rowrank, cutoff):
     return A, B
 
 
+def grow_site_0th(psi, sysdim, dtype):
+    assert len(psi) % sysdim == 0, "psi length must be divisible by sysdim"
+    insert_pos = len(psi) // sysdim
+    psi = copy.copy(psi)
+    t0 = np.array([1., 1.], dtype=dtype)
+    d = psi[0].shape[1] 
+    for i in range(0, len(psi), (insert_pos+1)):
+        Dl = psi[i].shape[0]  
+        t = np.zeros((Dl, d, Dl), dtype=dtype)
+        for j in range(Dl):
+            t[j, :, j] = t0 
+        psi[i:i] = [t]
+    return psi
+
 #======================== MPO ========================
 # For each tensor, the order of index is (left, i', i, right)
 # An MPO also has a left and a right tensor
