@@ -1,7 +1,8 @@
 import os, sys 
 #root = os.getenv('/home/chiamin/project/2023/qtt/JhengWei/INSTALL/xfac/build/python/')
 #sys.path.insert(0,root)
-sys.path.append('/home/jerrychen/xfac/build/python/')
+#sys.path.append('/home/jerrychen/xfac/build/python/')
+sys.path.append('/home/jerrychen/Desktop/My_Work/TN_Numerical/qtt_jerry/xfac_cytnx/build/python/')
 import xfacpy
 import numpy as np
 import time

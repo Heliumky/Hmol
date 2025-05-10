@@ -1,7 +1,6 @@
 import os, sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../CytnxTools')))
 import dmrg as dmrg
-import numpy as np
 import qtt_utility as ut
 import MPS_utility as mpsut
 import hamilt
@@ -10,9 +9,11 @@ import npmps
 import pickle
 import plot_utility as ptut
 import matplotlib.pyplot  as plt
+import numpy as np
+
 
 if __name__ == '__main__':
-    N = 9
+    N = 5
     #cutoff = 0.1
     shift = - 10
     rescale = -2*shift/(2**N-1)
@@ -35,7 +36,7 @@ if __name__ == '__main__':
 
     # Potential energy
     factor = 1
-    #os.system('python3 tci.py '+str(3*N)+' '+str(rescale)+' '+str(shift)+' '+str(cutoff)+' '+str(factor)+' --3D_one_over_r')
+    os.system('python3 tci.py '+str(3*N)+' '+str(rescale)+' '+str(shift)+' '+str(cutoff)+' '+str(factor)+' --3D_one_over_r')
     #V_MPS = load_mps('fit.mps.npy')
     V_MPS = tci.load_mps(f'fit{3*N}.mps.npy')
     #V_MPS = tci.tci_one_over_r_2D (2*N, rescale, cutoff, factor, shift)
