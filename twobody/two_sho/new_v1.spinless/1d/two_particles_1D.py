@@ -17,7 +17,7 @@ import cytnx
 #import plotsetting as ps
 
 if __name__ == '__main__':
-    N = 9
+    N = 3
     #cutoff = 0.1
     shift = - 10
     rescale = -2*shift/(2**N-1)
@@ -60,13 +60,13 @@ if __name__ == '__main__':
     H, L, R = twut.set_mpo_quantum_number (H, L, R)
     
     # Create MPS
-    psi = twut.make_product_mps (N)
+    psi = twut.make_product_mps (N,1)  # 1 complex, 3 double
     #psi = twut.make_product_mps (N, cytnx.Type.Double)
-    print([psi[i].dtype() for i in range(len(psi))])
+    print(len(psi))
 
     # Define the bond dimensions for the sweeps
-    maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50 + [32]*40
-    #maxdims = [2]*10
+    #maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50 + [32]*40
+    maxdims = [2]*1
     cutoff = 1e-12
 
     c0 = mpsut.inner (psi, psi)
@@ -87,16 +87,18 @@ if __name__ == '__main__':
     corr, Lcorr, Rcorr = npmps.compress_MPO (corr, Lcorr, Rcorr, cutoff=1e-12)
     corr, Lcorr, Rcorr = npmps.change_dtype (corr, Lcorr, Rcorr, dtype=complex)
 
-    maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50
+    #maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50
+    #maxdims = [2]*1
     corr, Lcorr, Rcorr = ut.mpo_to_uniten (corr, Lcorr, Rcorr)
     phi1 = npmps.random_MPS(N, 2, 15, 2,complex)
     phi1 = ut.mps_to_uniten (phi1)
     phi1, occ1,terrs1 = dmrg.dmrg (phi1, corr, Lcorr, Rcorr, maxdims, cutoff)
 
-
+    #maxdims = [2]*10 + [4]*50 + [8]*50 + [16]*50
+    maxdims = [2]*1
     phi2 = npmps.random_MPS(N, 2, 15, 2,complex)
     phi2 = ut.mps_to_uniten (phi2)
-    phi2, occ2, terrs2 = dmrg.dmrg (phi2, corr, Lcorr, Rcorr, maxdims, cutoff, ortho_mpss=[phi1], weights=[20])
+    phi2, occ2, terrs2 = dmrg.dmrg (phi2, corr, Lcorr, Rcorr, maxdims, cutoff, ortho_mpss=[phi1], weights=[1])
 
     overlap = mpsut.inner (phi1, phi2)
 

@@ -68,24 +68,37 @@ def get_ele_mpo(mpo, L, R, bstr):
 @njit(parallel=True)
 def get_2D_mesh_eles_mps(mps, bxs, bys):
     nx, ny = len(bxs), len(bys)
-    fs = np.zeros((nx, ny), dtype=mps[0].dtype)
-    for i in prange(nx):  # Parallelize this loop
-        for j in prange(ny):
-            bstr = np.hstack((bxs[i], bys[j]))  # Directly concatenate arrays
-            fs[i, j] = get_ele_mps(mps, bstr)
-    return fs.transpose(1,0)
+    total = nx * ny
+    fs = np.zeros((ny, nx), dtype=mps[0].dtype)
+    bstr_len = len(bxs[0]) + len(bys[0])  
+    for idx in prange(total):
+        bstr = np.empty(bstr_len, dtype=bxs[0].dtype)
+        i = idx % nx
+        j = idx // nx
+        
+        bstr[:len(bxs[i])] = bxs[i]
+        bstr[len(bxs[i]):] = bys[j]
+        
+        fs[j, i] = get_ele_mps(mps, bstr)
+    
+    return fs
 
 @njit(parallel=True)
 def get_3D_mesh_eles_mps(mps, bxs, bys, bzs):
     nx, ny, nz = len(bxs), len(bys), len(bzs)
-    fs = np.zeros((nx, ny, nz), dtype=mps[0].dtype)
-    for i in prange(nx):  # Parallelize this loop
-        for j in prange(ny):
-            for k in prange(nz):
-                bstr = np.hstack((bxs[i], bys[j], bzs[k]))  # Directly concatenate arrays
-                #print(bstr)
-                fs[i, j, k] = get_ele_mps(mps, bstr)
-    return fs.transpose(2,1,0)
+    total = nx * ny * nz
+    fs = np.zeros((nz, ny, nx), dtype=mps[0].dtype)
+    
+    for idx in prange(total):
+        bstr = np.empty(len(bxs[0]) + len(bys[0]) + len(bzs[0]), dtype=bxs[0].dtype)  
+        i = idx % nx
+        j = (idx // nx) % ny
+        k = idx // (nx * ny)
+
+        bstr[:] = np.hstack((bxs[i], bys[j], bzs[k]))
+        fs[k, j, i] = get_ele_mps(mps, bstr)
+   
+    return fs
 
 # Function for 2D mesh MPO
 @njit(parallel=True)

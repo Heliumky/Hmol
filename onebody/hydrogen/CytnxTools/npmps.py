@@ -192,7 +192,7 @@ def truncate_svd2 (T, rowrank, cutoff):
     return A, B
 
 
-def grow_site_0th(psi, sysdim, dtype):
+def grow_site_0th(psi, sysdim, D=sys.maxsize, cutoff=0., dtype=np.complex128):
     assert len(psi) % sysdim == 0, "psi length must be divisible by sysdim"
     insert_pos = len(psi) // sysdim
     psi = copy.copy(psi)
@@ -204,6 +204,24 @@ def grow_site_0th(psi, sysdim, dtype):
         for j in range(Dl):
             t[j, :, j] = t0 
         psi[i:i] = [t]
+    #psi = compress_MPS (psi, D, cutoff)
+    #psi = compress_MPS (psi, D, cutoff)
+    psi = [np.ascontiguousarray(psi[i]) for i in range(len(psi))]
+    return psi
+
+
+def kill_site(psi, sysdim, D=sys.maxsize, cutoff=0., dtype=np.complex128):
+    assert len(psi) % sysdim == 0, "psi length must be divisible by sysdim"
+    insert_pos = len(psi) // sysdim
+    psi = copy.copy(psi)
+    t0 = np.array([0.5, 0.5], dtype=dtype)
+    d = psi[0].shape[1] 
+    for i in range(0, len(psi), (insert_pos+1)):
+        psi[i] = ncon ([t0,psi[i]], ((1,), (-1,1,-2)))
+        psi[i+1] = ncon ([psi[i],psi[i+1]], ((-1,1), (1,-2,-3)))
+        del psi[i]
+    #psi = compress_MPS (psi, D, cutoff)
+    psi = [np.ascontiguousarray(psi[i]) for i in range(len(psi))]
     return psi
 
 #======================== MPO ========================

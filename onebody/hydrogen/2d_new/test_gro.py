@@ -12,7 +12,7 @@ import numpy as np
 #print(ptutj.dec_to_bin(3, 5).shape[0])
 #print(ptutj.bin_to_dec_list (ptutj.dec_to_bin(3, 5), rescale=1.0, shift=0.0))
 
-input_mps_path = "2d_dmrg_results_N=5.pkl"
+input_mps_path = "2d_dmrg_results_N=8.pkl"
 
 with open(input_mps_path, 'rb') as file:
     loaded_data = pickle.load(file)
@@ -29,8 +29,19 @@ phi0 = loaded_data['phi0']
 phi1 = loaded_data['phi1']
 
 
-#phi0 = npmps.grow_site_0th(phi0, sysdim=2, dtype=phi0[0].dtype)
-#phi1 = npmps.grow_site_0th(phi1, sysdim=2, dtype=phi1[0].dtype)
+#phi0 = npmps.kill_site(phi0, sysdim=2, dtype=phi0[0].dtype)
+#phi1 = npmps.kill_site(phi1, sysdim=2, dtype=phi1[0].dtype)
+#print(npmps.inner_MPS(phi0,phi0))
+
+
+phi0 = npmps.grow_site_0th(phi0, sysdim=2, dtype=phi0[0].dtype)
+phi1 = npmps.grow_site_0th(phi1, sysdim=2, dtype=phi1[0].dtype)
+print(npmps.inner_MPS(phi0,phi0))
+
+phi0 = npmps.kill_site(phi0, sysdim=2, dtype=phi0[0].dtype)
+phi1 = npmps.kill_site(phi1, sysdim=2, dtype=phi1[0].dtype)
+
+print(npmps.inner_MPS(phi0,phi0))
 
 #print([phi0[i].shape for i in range(len(phi0))])
 
